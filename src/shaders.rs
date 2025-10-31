@@ -1,11 +1,9 @@
 // shaders.rs
-// Vertex and fragment shader implementations
+// Basic vertex shader (planet shaders are in planet_shaders.rs)
 
 use raylib::prelude::*;
-use std::f32::consts::PI;
 use crate::vertex::Vertex;
 use crate::Uniforms;
-use crate::fragment::Fragment;
 
 /// Multiplies a 4x4 matrix with a 4D vector (homogeneous coordinates)
 #[inline]
@@ -19,8 +17,6 @@ fn multiply_matrix_vector4(matrix: &Matrix, vector: &Vector4) -> Vector4 {
 }
 
 /// Transforms a normal vector using the model matrix
-/// Note: For proper normal transformation, should use transpose of inverse matrix
-/// This simplified version works for uniform scaling
 #[inline]
 fn transform_normal(normal: &Vector3, model_matrix: &Matrix) -> Vector3 {
     let normal_vec4 = Vector4::new(normal.x, normal.y, normal.z, 0.0);
@@ -76,31 +72,4 @@ pub fn vertex_shader(vertex: &Vertex, uniforms: &Uniforms) -> Vertex {
         transformed_position,
         transformed_normal: transform_normal(&vertex.normal, &uniforms.model_matrix),
     }
-}
-
-/// Fragment shader: Computes final color for each fragment
-/// Current implementation: Animated color pattern based on position and time
-pub fn fragment_shader(fragment: &Fragment, uniforms: &Uniforms) -> Vector3 {
-    let pos = fragment.world_position;
-    let base_color = fragment.color; // Already has lighting applied
-    let time = uniforms.time;
-
-    // Create animated angular pattern
-    let angle = pos.x.atan2(pos.z) * 5.0 + time;
-    let hue = (angle / (2.0 * PI)) % 1.0;
-
-    // Generate RGB from hue using sine waves
-    let r = (hue * 20.0).sin().abs();
-    let g = (hue * 20.0 + 2.0).sin().abs();
-    let b = (hue * 20.0 + 4.0).sin().abs();
-    let pattern_color = Vector3::new(r, g, b);
-
-    // Blend pattern with lit color
-    let mixed = base_color * 0.3 + pattern_color * 0.7;
-    
-    // Preserve original lighting intensity
-    let original_intensity = (base_color.x + base_color.y + base_color.z) / 3.0;
-    let mixed_intensity = (mixed.x + mixed.y + mixed.z) / 3.0;
-    
-    mixed * (original_intensity / mixed_intensity.max(0.001))
 }
